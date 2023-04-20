@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"github.com/gin-gonic/gin"
+
 	"github.com/Kesha005/crud_with_file/pkg/common/models"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/tools/go/analysis/passes/nilfunc"
 )
 
 type File struct {
@@ -47,7 +49,21 @@ func addFile(ctx *gin.Context) {
 }
 
 func getFile(ctx *gin.Context) {
+	
+	id := ctx.Param("id")
+	var file models.FileModel
+	if err := models.db.First(&file,id); err !=nil{
+		ctx.JSON(http.StatusNotFound,gin.H{
+			"message":"Not found",
+		})
+		return 
+	}
+	ctx.JSON(200,gin.H{
+		"file":file,
+	})
+	
 
+		
 }
 
 func updateFile(ctx *gin.Context) {
