@@ -1,13 +1,11 @@
 package file_crud
 
 import (
-	"fmt"
+
 	"log"
 	"net/http"
-
 	"github.com/Kesha005/crud_with_file/pkg/common/models"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/tools/go/analysis/passes/nilfunc"
 )
 
 type File struct {
@@ -37,7 +35,7 @@ func addFile(ctx *gin.Context) {
 	}
 	up_file, _ := ctx.FormFile("file")
 	log.Println(up_file.Filename)
-	ctx.SaveUploadedFile(up_file, ../files)
+	ctx.SaveUploadedFile(up_file)
 
 	save_file := models.FileModel{Name: up_file.Filename, FilePath: ""}
 	models.DB.create(&save_file)
@@ -52,7 +50,7 @@ func getFile(ctx *gin.Context) {
 	
 	id := ctx.Param("id")
 	var file models.FileModel
-	if err := models.db.First(&file,id); err !=nil{
+	if err := models.DB.First(&file,id); err !=nil{
 		ctx.JSON(http.StatusNotFound,gin.H{
 			"message":"Not found",
 		})
@@ -60,10 +58,7 @@ func getFile(ctx *gin.Context) {
 	}
 	ctx.JSON(200,gin.H{
 		"file":file,
-	})
-	
-
-		
+	})		
 }
 
 func updateFile(ctx *gin.Context) {
