@@ -80,5 +80,13 @@ func (h bookhandler) updateBook(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK,&book)
 }
 func (h bookhandler) DeleteBook(ctx *gin.Context) {
+	id := ctx.Param("id")
+	var book models.Book
+	if result := h.DB.First(&book,id);result.Error!=nil{
+		ctx.AbortWithError(http.StatusNotFound,result.Error)
+		return
+	}
+	h.DB.Delete(&book)
 
+	ctx.JSON(http.StatusOK,"All ok")
 }
