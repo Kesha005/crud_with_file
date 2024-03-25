@@ -1,19 +1,45 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/Kesha005/gin-crud/package/db"
-	"github.com/Kesha005/gin-crud/package/modules/books"
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+var clients []websocket.Conn
+
 func main() {
-	url := "root:''@tcp(127.0.0.1:3306)/forgolang"
-	router := gin.Default()
-	dbhandler := db.ConnectToDb(url)
-	books.RegisterRoutes(router,dbhandler)
+	http.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		clients = append(clients, *conn)
+		for {
+			msgType, msg, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+			fmt.Printf("%s send: %s", conn.RemoteAddr(), string(msg))
+			for _,client := range clients {
+				if err := client.WriteMessage(msgType, msg); err != nil {
+					log.Fatal(err)
+					return
+				}
 
-	router.Run()
+			}
+		}
+	})
 
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "index.html")
 
+	})
+	println("Your server run in :8080")
+	http.ListenAndServe(":8080", nil)
 
 }
