@@ -19,13 +19,11 @@ var clients []websocket.Conn
 
 
 
-type UserStruct struct{
-	Name string 
+type UserChat  struct{
+	Username string 
 	Conn websocket.Conn
 }
 
-
-var users []UserStruct
 
 
 func main() {
