@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"log"
 	"net/http"
 
@@ -15,38 +15,31 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var clients []websocket.Conn
+var clients []Client
 
 
 
-type UserChat  struct{
-	Username string 
+type Client struct{
 	Conn websocket.Conn
+	Name string
 }
-
 
 
 func main() {
 	http.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
 		conn, _ := upgrader.Upgrade(w, r, nil)
 		
-		
-		
-		clients = append(clients, *conn)
-		for {
-			msgType, msg, err := conn.ReadMessage()
-			if err != nil {
-				return
-			}
-			fmt.Printf("%s send: %s", conn.RemoteAddr(), string(msg))
-			for _,client := range clients {
-				if err := client.WriteMessage(msgType, msg); err != nil {
-					log.Fatal(err)
-					return
-				}
+		client_name := r.Header.Get("Client-Name")
+		if client_name ==""{
+			panic("client name cannot be empty")
 
-			}
+			return 
 		}
+
+		client:= &Client{Name: client_name,Conn: *conn}
+
+		clients = append(clients, *client)
+
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
