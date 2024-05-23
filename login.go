@@ -9,7 +9,10 @@ import (
 
 
 
-func LoginUser(w http.ResponseWriter,r *http.Request){
+
+
+
+func Login(w http.ResponseWriter,r *http.Request){
 
 
 }
