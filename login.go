@@ -9,10 +9,6 @@ import (
 
 
 
-
-
-
-
 func LoginUser(w http.ResponseWriter,r *http.Request){
 
 
