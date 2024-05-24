@@ -1,9 +1,10 @@
 package main
 
 import (
-	//"fmt"
+
 	"encoding/json"
-	"log"
+	"fmt"
+	
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -14,66 +15,75 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var clients []Client
 
-type Msgs struct {
-	To      int
-	Sender  int
-	Message string
+
+type Message struct {
+	Sender   string
+	Receiver string
+	Content  string
 }
 
-type Client struct {
-	Conn websocket.Conn
-	Name string
+var clients = make(map[*websocket.Conn]string)
+var parior = make(map[string]*websocket.Conn)
+
+
+func HandleUpgrader(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+
+	if err!=nil{
+		panic(err)
+		return 
+	}
+
+	defer conn.Close()
+
+	userId := "this is user id"
+
+	clients[conn]= userId
+	parior[userId]= conn
+
+
+	defer func ()  {
+		delete(clients,conn)
+		delete(parior,userId)
+	}()
+	
 }
+
+func handleMessage(conn *websocket.Conn) {
+	for{
+		msgType, msg, err := conn.ReadMessage()
+		if err!=nil{
+			fmt.Println("There is some error: ",err)
+			continue
+		}
+
+		var message Message
+
+		if jsonerr := json.Unmarshal(msg, &message); jsonerr!=nil{
+			fmt.Println("There is unmarshal error: ",jsonerr)
+			continue
+		}
+
+		recipientconn, ok := parior[message.Receiver]
+
+		if !ok {
+			fmt.Println("There is conn error")
+			continue
+		}
+
+		senderr := recipientconn.WriteMessage(msgType, []byte(message.Content))
+		if senderr!=nil{
+			fmt.Println("sending error:",senderr)
+			continue
+		}
+
+	}
+}
+
 
 func main() {
-	http.HandleFunc("/echo", func(w http.ResponseWriter, r *http.Request) {
-		conn, _ := upgrader.Upgrade(w, r, nil)
-
-		defer conn.Close()
-
-		client_name := r.Header.Get("Client-Name")
-		if client_name == "" {
-			panic("client name cannot be empty")
-
-			return
-		}
-
-		client := &Client{Name: client_name, Conn: *conn}
-
-		clients = append(clients, *client)
-
-		for {
-
-			var msg Msgs
-
-			msgType, message, err := conn.ReadMessage()
-			if err != nil {
-				panic(err)
-				break
-			}
-			if msgType == websocket.TextMessage {
-				if msgerr := json.Unmarshal(message, &msg); msgerr != nil {
-
-					continue
-				}
-
-			}
-
-			for _, client := range clients{
-				client.Conn.WriteMessage(msgType,message)
-			}
-
-		}
-
-	})
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "index.html")
-
-	})
-	println("Your server run in :8080")
-	log.Fatal(http.ListenAndServe(":8090", nil))
-
-}
+	http.HandleFunc("/ws", HandleUpgrader)
+	fmt.Println("Server listening on port 8080")
+	http.ListenAndServe(":8090", nil)
+  }
